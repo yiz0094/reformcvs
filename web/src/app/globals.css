@@ -1,0 +1,107 @@
+@import "tailwindcss";
+
+@theme {
+  --color-paper: #f7f4ee;
+  --color-ink: #17171b;
+  --color-muted: #6e6a64;
+  --color-line: #e5dfd5;
+  --color-accent: #ff5a1f;
+  --color-accent-soft: #ffe9df;
+  --color-navy: #1e2b4a;
+  --color-sun: #ffc83d;
+  --color-ok: #1f9d63;
+  --color-warn: #c46a06;
+  --font-sans: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, system-ui, "Apple SD Gothic Neo",
+    "Noto Sans KR", "Malgun Gothic", sans-serif;
+}
+
+:root {
+  color-scheme: light;
+}
+
+html,
+body {
+  background: #ebe5db;
+  color: var(--color-ink);
+}
+
+body {
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+  word-break: keep-all;
+}
+
+@keyframes scan {
+  0% {
+    top: 4%;
+  }
+  100% {
+    top: 92%;
+  }
+}
+
+.animate-scan {
+  animation: scan 1.4s ease-in-out infinite alternate;
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.animate-rise {
+  animation: rise 0.45s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+input[type="range"].size-range {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 28px;
+  background: transparent;
+}
+input[type="range"].size-range::-webkit-slider-runnable-track {
+  height: 6px;
+  border-radius: 999px;
+  background: linear-gradient(to right, var(--color-ink) var(--fill), #e2dbcf var(--fill));
+}
+input[type="range"].size-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  margin-top: -9px;
+  height: 24px;
+  width: 24px;
+  border-radius: 999px;
+  background: #fff;
+  border: 2px solid var(--color-ink);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.18);
+}
+input[type="range"].size-range::-moz-range-track {
+  height: 6px;
+  border-radius: 999px;
+  background: #e2dbcf;
+}
+input[type="range"].size-range::-moz-range-progress {
+  height: 6px;
+  border-radius: 999px;
+  background: var(--color-ink);
+}
+input[type="range"].size-range::-moz-range-thumb {
+  height: 22px;
+  width: 22px;
+  border-radius: 999px;
+  background: #fff;
+  border: 2px solid var(--color-ink);
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  scrollbar-width: none;
+}

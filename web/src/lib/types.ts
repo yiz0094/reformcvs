@@ -1,0 +1,96 @@
+export type Category = "jacket" | "shirt" | "tshirt" | "hoodie" | "pants";
+export type Material = "denim" | "cotton" | "knit" | "poly" | "leather";
+export type DesignType = "embroidery" | "wappen" | "patch" | "print";
+export type PlacementId =
+  | "left-chest"
+  | "right-chest"
+  | "center-chest"
+  | "sleeve"
+  | "hem"
+  | "thigh"
+  | "knee";
+
+export type Point = { x: number; y: number };
+
+export interface QualityReport {
+  brightness: number;
+  sharpness: number;
+  coverage: number;
+  issues: string[];
+}
+
+export interface Garment {
+  id: string;
+  source: "sample" | "upload";
+  sampleId?: string;
+  name: string;
+  image: string;
+  width: number;
+  height: number;
+  category: Category;
+  colorName: string;
+  colorHex: string;
+  material: Material | null;
+  anchors: Partial<Record<PlacementId, Point>>;
+  /** 이미지 너비 대비 1cm가 차지하는 비율(%). 실측은 입고 검수에서 다시 맞춘다. */
+  pctPerCm: number;
+  analyzed: boolean;
+  quality?: QualityReport;
+  createdAt: number;
+}
+
+export interface MockupOptions {
+  placement: PlacementId;
+  pos: Point;
+  sizeCm: number;
+  colorId: string;
+  text: string;
+}
+
+export interface MockupSession {
+  id: string;
+  garmentId: string;
+  designSlug: string;
+  options: MockupOptions;
+  feedback: Record<string, "up" | "down">;
+  manualRequested?: boolean;
+  createdAt: number;
+}
+
+export interface PriceLine {
+  label: string;
+  amount: number;
+}
+
+export interface Quote {
+  id: string;
+  sessionId: string;
+  lines: PriceLine[];
+  total: number;
+  leadDays: number;
+  createdAt: number;
+}
+
+export type OrderStatus =
+  | "AWAITING_SHIPMENT"
+  | "INBOUND_TRANSIT"
+  | "INSPECTING"
+  | "AWAITING_APPROVAL"
+  | "IN_PROGRESS"
+  | "OUTBOUND_TRANSIT"
+  | "DELIVERED";
+
+export interface Order {
+  id: string;
+  orderNo: string;
+  quoteId: string;
+  sessionId: string;
+  total: number;
+  status: OrderStatus;
+  history: { status: OrderStatus | "PAID"; at: number }[];
+  tracking?: { carrier: string; number: string };
+  customer: { name: string; phone: string; address: string };
+  adjustNote?: string;
+  rating?: number;
+  createdAt: number;
+}
