@@ -263,6 +263,23 @@ export default function AdminBoard() {
     }
   };
 
+  /** 손님과 이야기해 그대로 진행하기로 하면 취소 요청 표시를 지운다. 손님은 필요하면 다시 요청할 수 있다 */
+  const closeCancelRequest = async (item: BoardItem) => {
+    if (!item.orderId) return;
+    if (backendOn) {
+      setBusy(true);
+      try {
+        await updateOrder(item.orderId, { cancel_requested_at: null, cancel_reason: null });
+        await reload();
+      } catch (e) {
+        return flash(e instanceof Error ? e.message : "취소 요청을 닫지 못했어요");
+      } finally {
+        setBusy(false);
+      }
+    } else dispatch({ type: "order/update", id: item.orderId, patch: { cancelRequestedAt: undefined, cancelReason: undefined } });
+    flash("취소 요청을 닫았어요. 주문은 그대로 진행돼요");
+  };
+
   /** 입고 검수 실측값을 주문에 남긴다. 빈칸은 저장하지 않는다 */
   const saveMeasure = async (item: BoardItem) => {
     if (!item.orderId) return;
@@ -702,6 +719,11 @@ export default function AdminBoard() {
               ) : (
                 <p className="text-center text-[13px] text-muted">완료된 주문이에요</p>
               )}
+              {selectedOrder?.cancelRequestedAt && selected.status !== "CANCELLED" ? (
+                <Button className="mt-3 w-full" size="sm" variant="secondary" disabled={busy} onClick={() => closeCancelRequest(selected)}>
+                  취소 요청 닫기 (그대로 진행)
+                </Button>
+              ) : null}
               {ADMIN_CANCELLABLE.includes(selected.status) ? (
                 cancelling ? (
                   <div className="mt-3 rounded-xl bg-[#fbeee9] p-3 text-[13px]">
