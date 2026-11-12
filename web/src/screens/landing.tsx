@@ -4,31 +4,15 @@ import { Camera, ChevronRight, Package, Scissors, Shirt, Sparkles, Store } from 
 import Link from "next/link";
 import { useState } from "react";
 import { Logo, PhoneFrame } from "@/components/app-frame";
-import { DesignSwatch, MockupStage } from "@/components/mockup-stage";
+import { DesignSwatch } from "@/components/mockup-stage";
 import { LinkButton, Toast } from "@/components/ui";
 import { backendOn, forgetMe } from "@/lib/db";
 import { DESIGNS } from "@/lib/designs";
-import { garmentFromSample } from "@/lib/factory";
+import { RealCaseCompare } from "@/components/real-case-compare";
 import { won } from "@/lib/format";
 import { SAMPLE_GARMENTS } from "@/lib/garments";
 import { STATUS_LABEL } from "@/lib/orders";
 import { dispatch, useStore } from "@/lib/store";
-
-const hero = garmentFromSample("denim-jacket", "hero", 0, true);
-const heroLayers = [
-  {
-    designSlug: "daisy-embroidery",
-    options: { placement: "left-chest" as const, pos: hero.anchors["left-chest"]!, sizeCm: 8.5, colorId: "white", text: "" },
-  },
-  {
-    designSlug: "smile-wappen",
-    options: { placement: "sleeve" as const, pos: hero.anchors.sleeve!, sizeCm: 8.5, colorId: "yellow", text: "" },
-  },
-  {
-    designSlug: "star-patch",
-    options: { placement: "hem" as const, pos: hero.anchors.hem!, sizeCm: 9, colorId: "red", text: "" },
-  },
-];
 
 const STEPS = [
   { icon: Camera, title: "옷 사진 한 장", desc: "바닥에 펼쳐 찍기만 하면 돼요" },
@@ -89,9 +73,64 @@ export default function Landing() {
       </section>
 
       <section className="px-5 pt-6">
-        <MockupStage garment={hero} layers={heroLayers} compare badge />
-        <p className="mt-2.5 text-center text-[12.5px] text-muted">가운데 손잡이를 좌우로 끌어 원본과 비교해 보세요</p>
+        <RealCaseCompare />
+        <h2 className="mb-4 mt-8 text-[23px] font-bold">뒷면의 변화</h2>
+        <RealCaseCompare side="back" />
+        <Link href="/cases/blue-crop" className="mt-5 flex items-center gap-4 rounded-[20px] border border-line bg-white p-3">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/cases/blue-crop/after-front-unified.png" alt="소매를 잘라낸 짧은 파란 레이어드 조끼" className="h-24 w-24 rounded-xl object-cover object-top" />
+          <div className="flex-1"><p className="text-xs text-muted">파란 PK티 시리즈</p><p className="mt-1 font-semibold">티셔츠와 원피스 위에<br />가볍게 걸치는 크롭 조끼</p><p className="mt-2 text-xs text-muted">앞면·뒷면 비포 애프터 보기 →</p></div>
+        </Link>
+        <Link href="/cases/knit-yarn" className="mt-5 flex items-center gap-4 rounded-[20px] border border-line bg-white p-3">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/cases/knit-yarn/after-long.png" alt="털실로 리폼한 니트 베스트" className="h-24 w-24 rounded-xl object-contain" />
+          <div className="flex-1"><p className="text-[11px] font-bold text-[#53634b]">새로운 리폼 이야기</p><p className="mt-1 text-[15px] font-semibold">보풀난 니트에<br />털실로 더한 새로운 표정</p><p className="mt-2 text-xs text-muted">완성 모습과 디테일 보기 →</p></div>
+        </Link>
       </section>
+
+        <div className="px-5">
+          <Link href="/cases/blue-eye" className="mt-3 flex items-center gap-4 rounded-[20px] border border-line bg-white p-3">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/cases/blue-eye/after-front-matched-unified.png" alt="눈 모양 장식과 고무줄 밑단으로 리폼한 파란 PK티" className="h-24 w-24 rounded-xl object-contain" />
+            <div className="flex-1"><p className="text-xs text-muted">파란 PK티 시리즈</p><p className="mt-1 font-semibold">파란 PK티에 담은 작은 시선들</p><p className="mt-2 text-xs text-muted">앞면·뒷면 비포 애프터 보기 →</p></div>
+          </Link>
+          <Link href="/cases/blue-zipper" className="mt-3 flex items-center gap-4 rounded-[20px] border border-line bg-white p-3">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/cases/blue-zipper/after-front-color-unified.png" alt="지퍼와 컬러 테이프로 리폼한 파란 PK티" className="h-24 w-24 rounded-xl object-contain" />
+            <div className="flex-1"><p className="text-xs text-muted">지퍼와 컬러 테이프 리폼</p><p className="mt-1 font-semibold">파란 PK티, 지퍼로 새롭게</p><p className="mt-2 text-xs text-muted">앞면·뒷면 비포 애프터 보기 →</p></div>
+          </Link>
+          <Link href="/cases/transfer-sweatshirt" className="mt-3 flex items-center gap-4 rounded-[20px] border border-line bg-white p-3">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/cases/transfer-sweatshirt/after-front.png" alt="자연 모티프 전사지로 꾸민 흰 맨투맨" className="h-24 w-24 rounded-xl object-contain" />
+            <div className="flex-1"><p className="text-[11px] font-bold text-[#53634b]">전사지로 이염 가리기</p><p className="mt-1 text-[15px] font-semibold">이염 위에 더한<br />작은 그림들</p><p className="mt-2 text-xs text-muted">비포 애프터 · 전사지 3종 보기 →</p></div>
+          </Link>
+          <Link href="/cases/black-wide" className="mt-3 flex items-center gap-4 rounded-[20px] border border-line bg-white p-3">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/cases/black-wide/after-front.png" alt="블루 원단으로 통을 넓힌 블랙 팬츠" className="h-24 w-24 rounded-xl object-contain" />
+            <div className="flex-1"><p className="text-[11px] font-bold text-[#53634b]">바지통 확장과 스텐실 리폼</p><p className="mt-1 text-[15px] font-semibold">블랙 팬츠에 더한<br />여유와 바다</p><p className="mt-2 text-xs text-muted">앞면·뒷면 비포 애프터 보기 →</p></div>
+          </Link>
+          <Link href="/cases/indigo-ocean" className="mt-3 flex items-center gap-4 rounded-[20px] border border-line bg-white p-3">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/cases/indigo-ocean/after-front.png" alt="쪽염색과 고양이·고래 원단 패치로 리폼한 티셔츠" className="h-24 w-24 rounded-xl object-contain" />
+            <div className="flex-1"><p className="text-[11px] font-bold text-[#53634b]">쪽염색과 원단 패치 리폼</p><p className="mt-1 text-[15px] font-semibold">오래된 흰 티셔츠,<br />쪽빛 바다를 입다</p><p className="mt-2 text-xs text-muted">앞면·뒷면 비포 애프터 보기 →</p></div>
+          </Link>
+          <Link href="/cases/denim-skirt" className="mt-3 flex items-center gap-4 rounded-[20px] border border-line bg-white p-3">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/cases/denim-skirt/after-front.png" alt="바지 두 벌을 재구성한 긴 청치마" className="h-24 w-24 rounded-xl object-contain" />
+            <div className="flex-1"><p className="text-[11px] font-bold text-[#53634b]">해체와 재구성 리폼</p><p className="mt-1 text-[15px] font-semibold">바지 두 벌,<br />하나의 청치마</p><p className="mt-2 text-xs text-muted">앞면·뒷면 비포 애프터 보기 →</p></div>
+          </Link>
+          <Link href="/cases/white-stamp" className="mt-3 flex items-center gap-4 rounded-[20px] border border-line bg-white p-3">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/cases/white-stamp/after-front.png" alt="나비와 꽃 스탬프·스텐실로 리폼한 흰색 남방" className="h-24 w-24 rounded-xl object-contain" />
+            <div className="flex-1"><p className="text-[11px] font-bold text-[#53634b]">스탬프와 스텐실 리폼</p><p className="mt-1 text-[15px] font-semibold">흰색 남방에 피어난<br />나비와 꽃</p><p className="mt-2 text-xs text-muted">앞면·뒷면 비포 애프터 보기 →</p></div>
+          </Link>
+          <Link href="/patches" className="mt-5 block rounded-xl border border-line bg-white px-4 py-4 text-sm font-semibold">패치 모음 · 원하는 장식 고르고 금액 계산하기 →</Link>
+        <Link href="/cases/gray-recut" className="mt-3 flex items-center gap-4 rounded-[20px] border border-line bg-white p-3">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/cases/gray-recut/after-front.png" alt="소매를 재단해 폭을 넓힌 회색 티" className="h-24 w-24 rounded-xl object-contain" />
+          <div className="flex-1"><p className="text-[11px] font-bold text-[#53634b]">앞뒤로 보는 리폼 이야기</p><p className="mt-1 text-[15px] font-semibold">소매를 다시 재단해<br />넉넉해진 회색 티</p><p className="mt-2 text-xs text-muted">앞면·뒷면 비포 애프터 보기 →</p></div>
+        </Link>
+      </div>
 
       <section className="grid gap-2.5 px-5 pt-6">
         <LinkButton href="/capture">
@@ -164,7 +203,7 @@ export default function Landing() {
       <section className="px-5 pt-10">
         <div className="rounded-[20px] border border-dashed border-[#cfc6b8] bg-[#fbf9f5] p-4">
           <div className="flex items-center gap-2 text-[14.5px] font-semibold">
-            <Scissors size={16} className="text-accent" /> 시안은 AI 예시 이미지예요
+            <Scissors size={16} className="text-accent" /> 체험에서 만드는 시안은 AI 예시예요
           </div>
           <p className="mt-1.5 text-[13.5px] leading-relaxed text-muted">
             실제 원단과 조명에 따라 결과가 조금 다를 수 있어요. 옷이 도착하면 실물을 검수하고, 실물 위 확정 시안을 한 번 더 보여 드린 뒤 작업을 시작해요.
