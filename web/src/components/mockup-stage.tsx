@@ -129,7 +129,7 @@ export function MockupStage({
     <div
       ref={ref}
       className={cx("relative isolate w-full select-none overflow-hidden bg-[#e7e1d7]", rounded, className)}
-      style={{ aspectRatio: `${garment.width} / ${garment.height}`, touchAction: canDrag || showCompare ? "none" : undefined }}
+      style={{ aspectRatio: `${garment.width} / ${garment.height}` }}
     >
       <div
         className="absolute inset-0 isolate transition-transform duration-500 ease-out"
@@ -156,7 +156,7 @@ export function MockupStage({
               </div>
               {canDrag ? (
                 <div
-                  className="absolute cursor-grab active:cursor-grabbing"
+                  className="absolute cursor-grab touch-none active:cursor-grabbing"
                   style={place}
                   onPointerDown={(e) => startDrag(e, i)}
                   onPointerMove={moveDrag}
@@ -188,6 +188,7 @@ export function MockupStage({
 
       {showCompare ? (
         <>
+          {/* 터치 막기는 끄는 손잡이에만 건다. 사진 전체에 걸면 그 위에서 페이지가 스크롤되지 않는다. 손잡이도 세로로 밀면 스크롤된다 */}
           <div
             role="slider"
             aria-label="원본과 시안 비교"
@@ -206,7 +207,7 @@ export function MockupStage({
             onPointerMove={moveSplit}
             onPointerUp={() => setSplitting(false)}
             onPointerCancel={() => setSplitting(false)}
-            className="absolute inset-y-0 z-10 -ml-6 w-12 cursor-ew-resize outline-none"
+            className="absolute inset-y-0 z-10 -ml-6 w-12 cursor-ew-resize touch-pan-y outline-none"
             style={{ left: `${split}%` }}
           >
             <span className="absolute inset-y-0 left-1/2 w-0.5 -translate-x-1/2 bg-white shadow-[0_0_0_1px_rgba(0,0,0,.12)]" />
