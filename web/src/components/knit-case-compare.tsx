@@ -10,10 +10,10 @@ export function KnitCaseCompare() {
       <div className="relative isolate aspect-square overflow-hidden rounded-[22px] bg-white">
         {/* Both layers use the same full-frame coordinates so changing the split never resizes the garment. */}
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/cases/knit-yarn/after-long.png" alt="실제 리폼 사진을 바탕으로 흰 배경에 펼친 모습으로 AI 연출한 니트" className="absolute inset-0 h-full w-full object-contain" />
+        <img src="/cases/knit-yarn/after-long.webp" alt="실제 리폼 사진을 바탕으로 흰 배경에 펼친 모습으로 AI 연출한 니트" className="absolute inset-0 h-full w-full object-contain" />
         <div className="absolute inset-0" style={{ clipPath: `inset(0 ${100 - split}% 0 0)` }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/cases/knit-yarn/before-long-pilling.png" alt="AI로 재구성한 리폼 전 예상 모습: 작은 보풀이 있는 밝은 크림 베이지색 니트" className="h-full w-full object-contain" />
+          <img src="/cases/knit-yarn/before-long-pilling.webp" alt="AI로 재구성한 리폼 전 예상 모습: 작은 보풀이 있는 밝은 크림 베이지색 니트" className="h-full w-full object-contain" />
         </div>
         <span className="pointer-events-none absolute left-3 top-3 rounded-full bg-black/65 px-3 py-2 text-[11px] font-semibold text-white">비포 · AI 재구성</span>
         <span className="pointer-events-none absolute right-3 top-3 rounded-full bg-[#53634b] px-3 py-2 text-[11px] font-semibold text-white">애프터 · AI 연출</span>

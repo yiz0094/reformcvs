@@ -12,10 +12,10 @@ export function TransferSweatshirtCompare({ side }: { side: "front" }) {
   return <figure>
     <div className="relative isolate aspect-square overflow-hidden rounded-[22px] bg-white focus-within:ring-2 focus-within:ring-accent">
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={`/cases/transfer-sweatshirt/after-${side}.png`} alt={`전사지 맨투맨 리폼 후 ${label}`} className="absolute inset-0 h-full w-full object-contain" style={photoStyle} />
+      <img src={`/cases/transfer-sweatshirt/after-${side}.webp`} alt={`전사지 맨투맨 리폼 후 ${label}`} className="absolute inset-0 h-full w-full object-contain" style={photoStyle} />
       <div className="absolute inset-0" style={{ clipPath: `inset(0 ${100 - split}% 0 0)` }}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={`/cases/transfer-sweatshirt/before-${side}.png`} alt={`전사지 맨투맨 리폼 전 ${label}`} className="h-full w-full object-contain" style={photoStyle} />
+        <img src={`/cases/transfer-sweatshirt/before-${side}.webp`} alt={`전사지 맨투맨 리폼 전 ${label}`} className="h-full w-full object-contain" style={photoStyle} />
       </div>
       <span className="pointer-events-none absolute left-3 top-3 rounded-full bg-black/65 px-3 py-2 text-[11px] font-semibold text-white">비포 재현 · {label}</span>
       <span className="pointer-events-none absolute right-3 top-3 rounded-full bg-[#53634b] px-3 py-2 text-[11px] font-semibold text-white">애프터 정리 · {label}</span>

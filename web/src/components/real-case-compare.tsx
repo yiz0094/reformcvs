@@ -21,13 +21,13 @@ export function RealCaseCompare({ side = "front" }: { side?: "front" | "back" })
         {/* The selected full after photo uses the same display size as the before crop.
             No separate shortening; both sleeves remain visible. */}
         <svg role="img" aria-label={`리폼 후 ${label}${isBack ? ": 하트 무늬와 고무줄 밑단, 평면화 이미지" : ""}`} viewBox="-24 -24 688 688" className="absolute inset-0 h-full w-full">
-          <image href={isBack ? "/cases/blue-polo-back-frontmatch-v2.png" : "/cases/blue-polo-rivets-hd-unified.png"} width="640" height="640" />
+          <image href={isBack ? "/cases/blue-polo-back-frontmatch-v2.webp" : "/cases/blue-polo-rivets-hd-unified.webp"} width="640" height="640" />
         </svg>
         <div className="absolute inset-0 bg-white" style={{ clipPath: `inset(0 ${100 - split}% 0 0)` }}>
           {/* Full source photograph including both sleeves, with breathing room. */}
           <svg role="img" aria-label={`리폼 전 ${label}${isBack ? " AI 재현" : ": 흰색 가슴 글씨가 있는 원래 파란 폴로셔츠"}`} viewBox="-24 -24 688 688" className="h-full w-full">
-            {isBack ? <image href="/cases/blue-polo-common/before-back-relaxed-unified.png" width="640" height="640" /> : <svg x="0" y="0" width="640" height="640" viewBox="0 0 640 640" overflow="hidden">
-              <image href="/cases/blue-polo-pair.png" width="1280" height="640" />
+            {isBack ? <image href="/cases/blue-polo-common/before-back-relaxed-unified.webp" width="640" height="640" /> : <svg x="0" y="0" width="640" height="640" viewBox="0 0 640 640" overflow="hidden">
+              <image href="/cases/blue-polo-pair.webp" width="1280" height="640" />
             </svg>}
           </svg>
         </div>
@@ -63,7 +63,7 @@ export function RealCaseCompare({ side = "front" }: { side?: "front" | "back" })
         <button type="button" onClick={() => setSplit(100)} className="min-h-10 underline underline-offset-4">비포 전체 보기</button>
         <button type="button" onClick={() => setSplit(0)} className="min-h-10 underline underline-offset-4">애프터 전체 보기</button>
       </div>
-      <a href={isBack ? "/cases/blue-polo-back-frontmatch-v2.png" : "/cases/blue-polo-rivets-hd-unified.png"} target="_blank" rel="noopener noreferrer" className="mt-3 flex min-h-11 items-center justify-center rounded-full border border-line bg-white px-4 text-[13px] font-semibold text-ink hover:border-accent focus-visible:outline-2 focus-visible:outline-accent">
+      <a href={isBack ? "/cases/blue-polo-back-frontmatch-v2.webp" : "/cases/blue-polo-rivets-hd-unified.webp"} target="_blank" rel="noopener noreferrer" className="mt-3 flex min-h-11 items-center justify-center rounded-full border border-line bg-white px-4 text-[13px] font-semibold text-ink hover:border-accent focus-visible:outline-2 focus-visible:outline-accent">
         {isBack ? "뒷면 평면화 이미지 크게 보기 ↗" : "리폼 후 원본 크게 보기 · 목깃과 소매 리벳 ↗"}
       </a>
     </figure>

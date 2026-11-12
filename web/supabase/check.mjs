@@ -234,4 +234,25 @@ assert.deepEqual((await rows(null, "select public.forget_kakao_user('1002') as p
 assert.equal((await q("select id from auth.users where id = $1", [L])).length, 0, "주문 없는 손님은 계정째 지운다");
 assert.equal((await q("select id from public.garments where user_id = $1", [L])).length, 0, "계정과 함께 기록도 지워진다");
 
+// 보관 기간: 1년 넘게 새 기록이 없는 손님(Old)의 체험 기록만 지우고, 최근 손님(New)과 주문에 쓰인 기록은 남긴다
+const [OLD, NEW] = ["f1", "a2"].map((c) => `${c.repeat(4)}-0000-4000-8000-000000000000`);
+for (const id of [OLD, NEW]) await q("insert into auth.users (id) values ($1)", [id]);
+await q(`insert into public.garments (id, user_id, photo_path, data, created_at) values
+  ('go1', $1, $3, '{}', now() - interval '2 years'), ('go2', $1, null, '{}', now() - interval '2 years'),
+  ('gn1', $2, $4, '{}', now() - interval '2 years')`, [OLD, NEW, `${OLD}/go1.jpg`, `${NEW}/gn1.jpg`]);
+await q(`insert into public.mockup_sessions (id, user_id, garment_id, data, created_at) values
+  ('so1', $1, 'go1', '{}', now() - interval '2 years'), ('so2', $1, 'go2', '{}', now() - interval '2 years'),
+  ('sn1', $2, 'gn1', '{}', now() - interval '3 days')`, [OLD, NEW]);
+await q(`insert into public.quotes (id, user_id, session_id, data, created_at) values ('qo2', $1, 'so2', '{}', now() - interval '2 years')`, [OLD]);
+await q(`insert into public.orders (id, order_no, user_id, quote_id, session_id, total, customer, consents, created_at) values ('oo2', 'RO2', $1, 'qo2', 'so2', 28500, '{}', '{}', now() - interval '2 years')`, [OLD]);
+await q("insert into public.order_lookups (user_id, phone, ok, at) values ($1, '010', false, now() - interval '40 days'), ($1, '011', false, now() - interval '2 days')", [NEW]);
+await q("insert into public.manual_requests (session_id, user_id, phone, requested_at, done_at) values ('sn1', $1, '010-1', now() - interval '50 days', now() - interval '40 days')", [NEW]);
+await fails(NEW, "select public.purge_expired()", [], "손님은 보관 기간 정리를 직접 못 부른다");
+assert.deepEqual((await q("select public.purge_expired() as p"))[0].p, [`${OLD}/go1.jpg`], "오래된 손님의 주문 안 쓴 사진만 돌려준다");
+assert.deepEqual((await q("select id from public.garments where user_id = $1 order by id", [OLD])).map((r) => r.id), ["go2"], "주문에 쓰인 옷은 남긴다");
+assert.deepEqual((await q("select id from public.orders where user_id = $1", [OLD])).map((r) => r.id), ["oo2"], "주문은 남긴다");
+assert.deepEqual((await q("select id from public.garments where user_id = $1", [NEW])).map((r) => r.id), ["gn1"], "최근에 기록을 만든 손님은 그대로다");
+assert.deepEqual((await q("select phone from public.order_lookups where user_id = $1", [NEW])).map((r) => r.phone), ["011"], "30일 지난 주문 찾기 시도만 지운다");
+assert.equal((await q("select phone from public.manual_requests where session_id = 'sn1'"))[0].phone, null, "시안을 보낸 지 30일 지난 연락처는 지운다");
+
 console.log("schema.sql 규칙 검사 통과");

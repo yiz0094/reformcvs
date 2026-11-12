@@ -23,6 +23,21 @@ const orderNo = () =>
     .format(new Date())
     .replaceAll("-", "")}${Math.floor(1000 + Math.random() * 9000)}`;
 
+/**
+ * 새 주문을 운영자 메신저로 알린다. ORDER_NOTIFY_WEBHOOK에 슬랙·디스코드 수신 웹훅 주소를 넣으면 켜진다.
+ * 손님 이름·연락처·주소는 보내지 않는다. 알림이 실패해도 주문은 그대로 접수된다.
+ */
+async function notifyNewOrder(message: string, adminUrl: string) {
+  const hook = process.env.ORDER_NOTIFY_WEBHOOK;
+  if (!hook) return;
+  const text = `${message}\n운영 콘솔: ${adminUrl}`;
+  try {
+    await fetch(hook, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ text, content: text }), signal: AbortSignal.timeout(3000) });
+  } catch (e) {
+    console.error("새 주문 알림을 보내지 못했어요", e);
+  }
+}
+
 export async function POST(request: Request) {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const secret = process.env.SUPABASE_SECRET_KEY;
@@ -68,7 +83,9 @@ export async function POST(request: Request) {
     // 상태 기록은 트리거가 저장 뒤에 남기므로 다시 읽어서 함께 돌려준다
     const { data } = await db.from("orders").select(ORDER_COLUMNS).eq("id", id).single();
     if (!data) return fail(500, "주문은 접수됐지만 불러오지 못했어요. 새로고침해 주세요");
-    return Response.json({ order: toOrder(data as OrderRow) });
+    const order = toOrder(data as OrderRow);
+    await notifyNewOrder(`새 주문 ${order.orderNo} · ${design.name} · ${total.toLocaleString("ko-KR")}원`, new URL("/admin", request.url).href);
+    return Response.json({ order });
   }
   return fail(500, "주문번호를 만들지 못했어요");
 }

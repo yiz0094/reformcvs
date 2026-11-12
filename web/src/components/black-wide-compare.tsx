@@ -14,10 +14,10 @@ export function BlackWideCompare({ side }: { side: "front" | "back" }) {
   return <figure>
     <div className="relative isolate aspect-square overflow-hidden rounded-[22px] bg-white focus-within:ring-2 focus-within:ring-accent">
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={`/cases/black-wide/after-${side}.png`} alt={`블랙 와이드 팬츠 리폼 후 ${label}`} className="absolute inset-0 h-full w-full object-contain" style={side === "back" ? backAfterStyle : photoStyle} />
+      <img src={`/cases/black-wide/after-${side}.webp`} alt={`블랙 와이드 팬츠 리폼 후 ${label}`} className="absolute inset-0 h-full w-full object-contain" style={side === "back" ? backAfterStyle : photoStyle} />
       <div className="absolute inset-0 bg-white" style={{ clipPath: `inset(0 ${100 - split}% 0 0)` }}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={`/cases/black-wide/before-${side}.png`} alt={`블랙 와이드 팬츠 리폼 전 ${label}`} className="h-full w-full object-contain" style={photoStyle} />
+        <img src={`/cases/black-wide/before-${side}.webp`} alt={`블랙 와이드 팬츠 리폼 전 ${label}`} className="h-full w-full object-contain" style={photoStyle} />
       </div>
       <span className="pointer-events-none absolute left-3 top-3 rounded-full bg-black/65 px-3 py-2 text-[11px] font-semibold text-white">비포 · {label}</span>
       <span className="pointer-events-none absolute right-3 top-3 rounded-full bg-[#53634b] px-3 py-2 text-[11px] font-semibold text-white">애프터 · {label}</span>

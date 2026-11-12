@@ -6,14 +6,14 @@ import { ChevronsLeftRight } from "lucide-react";
 export function DenimSkirtCompare({ side }: { side: "front" | "back" }) {
   const [split, setSplit] = useState(50);
   const label = side === "front" ? "앞면" : "뒷면";
-  const before = `/cases/denim-skirt/before-${side}.png`;
+  const before = `/cases/denim-skirt/before-${side}.webp`;
   // Align waistband landmarks; let the fringe extend below the trouser hem.
   const beforeStyle = { width: "66.6%", height: "90%", left: "16.7%", top: "3%" };
   const afterStyle = { width: "66.6%", height: side === "front" ? "97.6%" : "99.6%", left: "16.7%", top: side === "front" ? "2.9%" : "-1.4%" };
   return <figure>
     <div className="relative isolate aspect-square overflow-hidden rounded-[22px] bg-white focus-within:ring-2 focus-within:ring-accent">
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={`/cases/denim-skirt/after-${side}.png`} alt={`바지 두 벌로 만든 청치마 ${label}`} className="absolute object-fill" style={afterStyle} />
+      <img src={`/cases/denim-skirt/after-${side}.webp`} alt={`바지 두 벌로 만든 청치마 ${label}`} className="absolute object-fill" style={afterStyle} />
       {before && <>
         <div className="absolute inset-0 bg-white" style={{ clipPath: `inset(0 ${100 - split}% 0 0)` }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}

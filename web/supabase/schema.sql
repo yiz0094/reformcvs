@@ -356,6 +356,35 @@ end $$;
 revoke execute on function public.forget_trials_of, public.forget_kakao_user from public, anon, authenticated;
 grant execute on function public.forget_kakao_user to service_role;
 
+-- 보관 기간이 지난 기록 지우기: 매일 한 번 /api/cron/daily가 비밀 키로 부른다(처리방침 제3조 기본안).
+-- 1년 넘게 새 기록이 없는 손님의 주문에 쓰이지 않은 체험 기록, 30일 지난 주문 찾기 시도,
+-- 시안을 보낸 지 30일 지난 디자이너 요청의 연락처. 지울 사진 경로를 돌려준다.
+-- shortcut: '마지막 이용'은 가장 최근에 만든 기록의 때로 본다. 시안을 고치기만 한 때까지 세려면 updated_at을 둔다.
+create function public.purge_expired() returns text[]
+language plpgsql security definer set search_path = ''
+as $$
+declare
+  v_paths text[] := '{}';
+  v_uid uuid;
+begin
+  for v_uid in
+    select u from (
+      select user_id as u, max(created_at) as last from public.garments group by user_id
+      union all select user_id, max(created_at) from public.mockup_sessions group by user_id
+      union all select user_id, max(created_at) from public.quotes group by user_id
+      union all select user_id, max(created_at) from public.orders group by user_id
+      union all select user_id, max(requested_at) from public.manual_requests group by user_id
+    ) t group by u having max(last) < now() - interval '1 year'
+  loop
+    v_paths := v_paths || public.forget_trials_of(v_uid);
+  end loop;
+  delete from public.order_lookups where at < now() - interval '30 days';
+  update public.manual_requests set phone = null where phone is not null and done_at < now() - interval '30 days';
+  return v_paths;
+end $$;
+revoke execute on function public.purge_expired from public, anon, authenticated;
+grant execute on function public.purge_expired to service_role;
+
 -- AI 학습 활용(선택) 동의를 철회한다. 철회한 때를 함께 남긴다
 create function public.withdraw_learning(p_order_id text) returns void
 language plpgsql security definer set search_path = ''

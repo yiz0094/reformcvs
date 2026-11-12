@@ -1,3 +1,7 @@
 .claude
 *.tsbuildinfo
 .env*
+# 사례 사진 원본(PNG·JPG)은 저장소에만 두고, 화면은 public/cases의 WebP를 쓴다
+public/cases/**/*.png
+public/cases/**/*.jpg
+public/cases/**/*.jpeg

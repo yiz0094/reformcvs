@@ -63,7 +63,7 @@ function DetailImage({ product }: { product: Product }) {
   return <div className="flex aspect-square items-center justify-center overflow-hidden rounded-xl bg-white p-4"><div className="relative overflow-hidden" style={{ width: `${Math.min(1, width / height) * 72}%`, maxWidth: width, aspectRatio: `${width} / ${height}`, clipPath: viewport?.clip }}>
     {/* Each product uses a transparent cutout sprite, displayed on white. */}
     {/* eslint-disable-next-line @next/next/no-img-element */}
-    <img src={`/cases/gray-recut/patch-cutout-${product.back ? "back" : "front"}.png`} alt={product.name} loading="lazy" className="absolute max-w-none" style={{ width: `${1024 / width * 100}%`, left: `${-x / width * 100}%`, top: `${-y / height * 100}%` }} />
+    <img src={`/cases/gray-recut/patch-cutout-${product.back ? "back" : "front"}.webp`} alt={product.name} loading="lazy" className="absolute max-w-none" style={{ width: `${1024 / width * 100}%`, left: `${-x / width * 100}%`, top: `${-y / height * 100}%` }} />
   </div></div>;
 }
 

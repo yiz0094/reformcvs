@@ -60,6 +60,9 @@ npm run start
 - 운영 콘솔 위쪽 지표 8개(시안 수, 체험한 손님, 시안에서 주문까지, 주문 금액, 확정 시안 한 번에 승인, 주문부터 도착까지 등)는 실제 기록으로 계산한다. 정의는 `src/lib/metrics.ts` 한곳에 있고, `node src/lib/metrics.check.mjs`로 검사한다.
 - 운영 콘솔은 이메일로 로그인하고, 모든 주문을 실시간으로 본다. 확정 사진을 올리고 출고 송장을 넣는다.
 - 손님은 체험을 로그인 없이 하고, 주문할 때 카카오로 로그인한다. 돌아오면 익명 계정의 기록과 사진을 카카오 계정으로 옮긴다(`src/app/api/claim`). 다른 기기에서 다시 로그인한 손님도 그대로 이어진다. 서버는 익명 계정의 주문을 받지 않는다.
+- 매일 한 번 Vercel 크론이 `/api/cron/daily`를 부른다. 무료 Supabase가 7일 동안 안 쓰여 멈추지 않게 하고, 처리방침 기본안의 보관 기간(체험 기록 마지막 이용 후 1년, 주문 찾기 시도 30일, 디자이너 요청 연락처는 시안을 보낸 뒤 30일)이 지난 기록과 사진을 지운다(`purge_expired`). `CRON_SECRET`을 넣으면 그 값으로 온 요청만 받는다.
+- `ORDER_NOTIFY_WEBHOOK`에 슬랙·디스코드 수신 웹훅 주소를 넣으면 새 주문을 알린다(주문번호·디자인·금액만, 손님 정보는 보내지 않음).
+- 사진 보관함은 5MB 이하 jpg·png·webp만 받는다.
 - 손님이 카카오에서 연결을 끊거나 탈퇴하면 카카오가 `/api/kakao/unlink`를 부른다. 주문에 쓰이지 않은 기록·사진을 지우고, 주문이 없으면 계정째, 주문이 있으면 주문만 남기고 카카오 정보를 지운다(`forget_kakao_user`).
 
 아직 없는 것: 실제 결제, 알림톡, AI 인식·시안 생성.
@@ -69,7 +72,7 @@ npm run start
 ### 연결하는 법
 
 1. supabase.com에서 프로젝트를 만든다. 지역은 Northeast Asia (Seoul).
-2. SQL Editor에 `supabase/schema.sql`을 통째로 붙여 넣고 실행한다. 예전 schema.sql을 이미 실행한 프로젝트는 대신 `supabase/patch-*.sql` 중 아직 실행하지 않은 것을 순서대로(find-order → measure-cancel → manual → privacy → kakao-unlink) 한 번씩 실행한다.
+2. SQL Editor에 `supabase/schema.sql`을 통째로 붙여 넣고 실행한다. 예전 schema.sql을 이미 실행한 프로젝트는 대신 `supabase/patch-*.sql` 중 아직 실행하지 않은 것을 순서대로(find-order → measure-cancel → manual → privacy → kakao-unlink → retention) 한 번씩 실행한다.
 3. Authentication → Sign In / Providers에서 **Allow anonymous sign-ins**를 켠다.
 4. Authentication → Users → Add user로 관리자 계정(이메일·비밀번호, Auto Confirm)을 만든다. 그다음 SQL Editor에서 관리자로 등록한다.
 
