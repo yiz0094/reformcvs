@@ -7,8 +7,11 @@ import { PGlite } from "@electric-sql/pglite";
 const SUPABASE_STUB = `
 create role anon nologin;
 create role authenticated nologin;
+create role service_role nologin;
 create schema auth;
-create table auth.users (id uuid primary key);
+create table auth.users (id uuid primary key, email text, raw_user_meta_data jsonb);
+create table auth.identities (user_id uuid references auth.users on delete cascade, provider text, provider_id text);
+create table auth.sessions (id uuid primary key default gen_random_uuid(), user_id uuid references auth.users on delete cascade);
 create function auth.uid() returns uuid language sql stable
   as $$ select nullif(current_setting('request.jwt.claim.sub', true), '')::uuid $$;
 create schema storage;
@@ -204,5 +207,31 @@ await fails(A, "select public.withdraw_learning('o1')", [], "이미 철회했으
 await db.exec("set role anon");
 await assert.rejects(() => db.query("select public.forget_my_trials()"), "로그인 안 한 사람은 지우기를 못 쓴다");
 await db.exec("reset role");
+
+// 카카오 연결 해제: 주문 있는 손님(K)은 주문만 남기고 카카오 정보를 지우고, 주문 없는 손님(L)은 계정째 지운다
+const q = async (sql, params) => (await as(null, sql, params)).rows;
+const [K, L] = ["d1", "e1"].map((c) => `${c.repeat(4)}-0000-4000-8000-000000000000`);
+for (const [id, kakao] of [[K, "1001"], [L, "1002"]]) {
+  await db.query(`insert into auth.users (id, email, raw_user_meta_data) values ($1, 'x@kakao', '{"name": "손님"}')`, [id]);
+  await db.query("insert into auth.identities (user_id, provider, provider_id) values ($1, 'kakao', $2)", [id, kakao]);
+  await db.query("insert into auth.sessions (user_id) values ($1)", [id]);
+}
+await as(K, "insert into public.garments (id, photo_path, data) values ('gk1', $1, '{}'), ('gk2', $2, '{}')", [`${K}/gk1.jpg`, `${K}/gk2.jpg`]);
+await as(K, "insert into public.mockup_sessions (id, garment_id, data) values ('sk1', 'gk1', '{}'), ('sk2', 'gk2', '{}')");
+await as(K, "insert into public.quotes (id, session_id, data) values ('qk1', 'sk1', '{}'), ('qk2', 'sk2', '{}')");
+await as(null, `insert into public.orders (id, order_no, user_id, quote_id, session_id, total, customer, consents) values ('ok1', 'RK1', $1, 'qk1', 'sk1', 28500, '{}', '{}')`, [K]);
+await as(null, "insert into public.order_lookups (user_id, phone, ok) values ($1, '01000000000', false)", [K]);
+await as(L, "insert into public.garments (id, photo_path, data) values ('gl1', $1, '{}')", [`${L}/gl1.jpg`]);
+await as(L, "insert into public.mockup_sessions (id, garment_id, data) values ('sl1', 'gl1', '{}')");
+await fails(K, "select public.forget_kakao_user('1001')", [], "손님은 카카오 해제 함수를 직접 못 부른다");
+assert.deepEqual((await rows(null, "select public.forget_kakao_user('9999') as p"))[0].p, [], "모르는 회원번호면 아무것도 안 한다");
+assert.deepEqual((await rows(null, "select public.forget_kakao_user('1001') as p"))[0].p, [`${K}/gk2.jpg`], "주문에 안 쓰인 사진만 돌려준다");
+assert.deepEqual(await ids(K, "public.orders"), ["ok1"], "주문은 남는다");
+assert.deepEqual(await ids(K, "public.garments"), ["gk1"], "주문에 쓰인 옷만 남는다");
+const [k] = await q("select email, raw_user_meta_data as meta, (select count(*) from auth.identities where user_id = $1)::int as links, (select count(*) from auth.sessions where user_id = $1)::int as sessions, (select count(*) from public.order_lookups where user_id = $1)::int as lookups from auth.users where id = $1", [K]);
+assert.deepEqual([k.email, k.meta, k.links, k.sessions, k.lookups], [null, {}, 0, 0, 0], "카카오 연결·정보·로그인·찾기 기록을 지운다");
+assert.deepEqual((await rows(null, "select public.forget_kakao_user('1002') as p"))[0].p, [`${L}/gl1.jpg`], "주문 없는 손님의 사진도 돌려준다");
+assert.equal((await q("select id from auth.users where id = $1", [L])).length, 0, "주문 없는 손님은 계정째 지운다");
+assert.equal((await q("select id from public.garments where user_id = $1", [L])).length, 0, "계정과 함께 기록도 지워진다");
 
 console.log("schema.sql 규칙 검사 통과");

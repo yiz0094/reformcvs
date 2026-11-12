@@ -292,6 +292,52 @@ async function flush() {
   await queue;
 }
 
+// 카카오 로그인 ------------------------------------------------------------
+
+const CLAIM_KEY = "reform-claim";
+
+/** 카카오로 로그인한 손님 이름. 아직 익명(로그인 전)이면 null */
+export async function kakaoName(): Promise<string | null> {
+  const { data } = await customerDb().auth.getSession();
+  const user = data.session?.user;
+  if (!user || user.is_anonymous) return null;
+  const m = user.user_metadata as Record<string, string | undefined>;
+  return m.name ?? m.full_name ?? m.nickname ?? m.user_name ?? "카카오 손님";
+}
+
+/**
+ * 주문 직전 카카오 로그인. 익명으로 만든 체험 기록을 서버에 확실히 적고, 익명 계정의 열쇠를 이 탭에만 잠깐 맡긴 뒤
+ * 카카오로 보낸다. 돌아오면 finishKakaoLogin이 그 기록을 카카오 계정으로 옮긴다.
+ */
+export async function startKakaoLogin(trial: { garment: Garment; session: MockupSession; quote: Quote }) {
+  await flush();
+  await saveGarment(trial.garment, true);
+  await saveSession(trial.session);
+  await saveQuote(trial.quote);
+  const db = customerDb();
+  const { data } = await db.auth.getSession();
+  if (data.session?.user.is_anonymous) sessionStorage.setItem(CLAIM_KEY, data.session.access_token);
+  const { error } = await db.auth.signInWithOAuth({ provider: "kakao", options: { redirectTo: window.location.href.split("#")[0] } });
+  if (error) throw new Error("카카오 로그인을 시작하지 못했어요");
+}
+
+/** 카카오에서 돌아온 뒤 익명 체험 기록을 카카오 계정으로 옮긴다. 옮겼으면 true */
+export async function finishKakaoLogin() {
+  const anonToken = sessionStorage.getItem(CLAIM_KEY);
+  if (!anonToken) return false;
+  const { data } = await customerDb().auth.getSession();
+  // 카카오 화면에서 취소하고 돌아오면 아직 익명이다. 열쇠는 다음 시도를 위해 둔다
+  if (!data.session || data.session.user.is_anonymous) return false;
+  const res = await fetch("/api/claim", {
+    method: "POST",
+    headers: { "content-type": "application/json", authorization: `Bearer ${data.session.access_token}` },
+    body: JSON.stringify({ anonToken }),
+  });
+  if (!res.ok) throw new Error(((await res.json().catch(() => ({}))) as { error?: string }).error ?? "체험 기록을 계정으로 옮기지 못했어요");
+  sessionStorage.removeItem(CLAIM_KEY);
+  return true;
+}
+
 async function call(name: string, args: Record<string, unknown>) {
   const { error } = await customerDb().rpc(name, args);
   if (error) throw new Error(error.message);

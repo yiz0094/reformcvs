@@ -33,6 +33,7 @@ export async function POST(request: Request) {
   const token = request.headers.get("authorization")?.replace(/^Bearer\s+/i, "");
   const user = token ? (await db.auth.getUser(token)).data.user : null;
   if (!user) return fail(401, "다시 들어와서 주문해 주세요");
+  if (user.is_anonymous) return fail(401, "카카오로 로그인한 뒤 주문해 주세요");
 
   const body = (await request.json().catch(() => null)) as {
     quoteId?: unknown;

@@ -2,11 +2,11 @@
 
 import { Check, CreditCard, LoaderCircle, MessageCircle, ShieldCheck, Store } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { BottomBar, Missing, PhoneFrame, ScreenSkeleton, TopBar } from "@/components/app-frame";
 import { MockupStage } from "@/components/mockup-stage";
 import { Button, Card, DemoTag, Label, TextField } from "@/components/ui";
-import { backendOn, placeOrder } from "@/lib/db";
+import { backendOn, finishKakaoLogin, kakaoName, placeOrder, startKakaoLogin } from "@/lib/db";
 import { colorOf, designBySlug } from "@/lib/designs";
 import { cx, newId, won, nowMs } from "@/lib/format";
 import { PLACEMENT_LABEL } from "@/lib/garments";
@@ -27,12 +27,38 @@ export default function CheckoutScreen() {
   const router = useRouter();
   const isClient = useIsClient();
   const { quotes, sessions, garments, user } = useStore();
-  const [form, setForm] = useState({ name: "김리폼", phone: "010-1234-5678", address: "서울시 마포구 월드컵로 00, 101동 1001호" });
+  // 시연 모드에서만 예시 주소를 채워 둔다. 실제 손님은 빈칸에서 시작한다
+  const [form, setForm] = useState(
+    backendOn ? { name: "", phone: "", address: "" } : { name: "김리폼", phone: "010-1234-5678", address: "서울시 마포구 월드컵로 00, 101동 1001호" },
+  );
   const [agree, setAgree] = useState({ custom: false, ai: false, learn: false });
   const [method, setMethod] = useState("card");
   const [paying, setPaying] = useState(false);
   const [loggingIn, setLoggingIn] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [kakao, setKakao] = useState<string | null>(null);
+
+  // 카카오에서 돌아오면 익명으로 만든 시안을 계정으로 옮기고 로그인한 이름을 받는 분 칸에 채운다
+  useEffect(() => {
+    if (!backendOn) return;
+    let alive = true;
+    const failed = new URLSearchParams(window.location.hash.slice(1) || window.location.search).has("error");
+    (async () => {
+      try {
+        if (await finishKakaoLogin()) await refresh();
+        const name = await kakaoName();
+        if (!alive) return;
+        setKakao(name);
+        if (name) setForm((f) => (f.name ? f : { ...f, name }));
+        if (failed && !name) setError("카카오 로그인이 끝나지 않았어요. 다시 시도해 주세요");
+      } catch (e) {
+        if (alive) setError(e instanceof Error ? e.message : "카카오 로그인을 마치지 못했어요");
+      }
+    })();
+    return () => {
+      alive = false;
+    };
+  }, []);
 
   const quote = quotes[quoteId];
   const session = quote ? sessions[quote.sessionId] : undefined;
@@ -43,10 +69,19 @@ export default function CheckoutScreen() {
   if (!quote || !session || !garment || !design) return <Missing what="견적" />;
 
   const o = session.options;
-  const ready = !!user && agree.custom && agree.ai && form.name.trim() && form.phone.trim() && form.address.trim();
+  const me = backendOn ? kakao : (user?.name ?? null);
+  const ready = !!me && agree.custom && agree.ai && form.name.trim() && form.phone.trim() && form.address.trim();
 
   const login = () => {
     setLoggingIn(true);
+    if (backendOn) {
+      setError(null);
+      startKakaoLogin({ garment, session, quote }).catch((e) => {
+        setError(e instanceof Error ? e.message : "카카오 로그인을 시작하지 못했어요");
+        setLoggingIn(false);
+      });
+      return;
+    }
     window.setTimeout(() => {
       dispatch({ type: "user/login", name: form.name });
       setLoggingIn(false);
@@ -137,13 +172,13 @@ export default function CheckoutScreen() {
       <section className="px-5 pt-3">
         <Card>
           <Label>로그인</Label>
-          {user ? (
+          {me ? (
             <div className="flex items-center gap-2 text-[14.5px]">
               <span className="grid h-8 w-8 place-items-center rounded-full bg-[#fee500] text-[#191919]">
                 <MessageCircle size={16} />
               </span>
               <span>
-                <b>{user.name}</b>님 카카오 계정으로 주문해요
+                <b>{me}</b>님 카카오 계정으로 주문해요
               </span>
             </div>
           ) : (
@@ -244,7 +279,7 @@ export default function CheckoutScreen() {
             <>
               <LoaderCircle size={19} className="animate-spin" /> 결제 승인 중
             </>
-          ) : !user ? (
+          ) : !me ? (
             "로그인 후 결제할 수 있어요"
           ) : !agree.custom || !agree.ai ? (
             "필수 약관에 동의해 주세요"
