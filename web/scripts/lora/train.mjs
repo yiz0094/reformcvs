@@ -7,7 +7,7 @@ import { existsSync } from "node:fs";
 import { readFile, writeFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import { parseArgs } from "node:util";
-import { run, upload } from "./fal.mjs";
+import { bytes, run, upload } from "./fal.mjs";
 
 const ENDPOINT = "fal-ai/flux-2-trainer-v2/edit";
 // fal 가격표(2026-11): 0.0056 × 스텝 × 배수. 배수는 쌍마다 들어가는 입력 사진 수(전 + 도안)로 정해진다
@@ -55,6 +55,15 @@ const lora = {
 };
 await writeFile(join(dir, "lora.json"), JSON.stringify(lora, null, 2));
 console.log(`학습이 끝났어요 → ${join(dir, "lora.json")}`);
+// fal에 둔 학습 파일이 언제까지 남는지 몰라 사본을 받아 둔다. 실패해도 주소는 위 lora.json에 이미 있다
+try {
+  await writeFile(join(dir, "lora.safetensors"), await bytes(lora.url));
+  lora.file = "lora.safetensors";
+  await writeFile(join(dir, "lora.json"), JSON.stringify(lora, null, 2));
+  console.log(`학습 파일 사본: ${join(dir, lora.file)} (지우지 말고 보관하세요)`);
+} catch (e) {
+  console.error(`학습 파일 사본을 받지 못했어요(${e.message}). 이 주소에서 직접 받아 두세요: ${lora.url}`);
+}
 console.log(`다음: node --env-file=.env.local scripts/lora/review.mjs ${positionals[0]}`);
 console.log("서비스에 붙일 때 AI_LORAS에 넣을 값(디자인 종류 또는 slug를 키로):");
 console.log(JSON.stringify({ "<디자인 종류>": { url: lora.url, prompt: lora.prompt } }));

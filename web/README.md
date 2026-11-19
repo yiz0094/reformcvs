@@ -107,7 +107,7 @@ npm run start
 
 1. 사진 폴더에 `01_전.jpg`, `01_후.jpg`, (있으면) `01_도안.png`처럼 번호를 맞춰 넣는다.
 2. 정리: `node scripts/lora/prepare.mjs <사진 폴더> --trigger RFM_WAPPEN --task "sew the wappen from the reference onto the garment"` → 옆에 `<사진 폴더>-RFM_WAPPEN/`(학습 쌍, 검사 쌍, `train.zip`). 키가 필요 없다. 검사: `node scripts/lora/prepare.check.mjs`
-3. 학습: `node --env-file=.env.local scripts/lora/train.mjs <그 폴더>` → 1,000스텝에 약 $12(도안을 넣으면 약 $19). 끝나면 `lora.json`과 `AI_LORAS`에 넣을 값을 보여 준다.
+3. 학습: `node --env-file=.env.local scripts/lora/train.mjs <그 폴더>` → 1,000스텝에 약 $12(도안을 넣으면 약 $19). 끝나면 `lora.json`과 `AI_LORAS`에 넣을 값을 보여 주고, fal에 있는 학습 파일의 사본(`lora.safetensors`)을 폴더에 받아 둔다. fal에서 파일이 지워지면 이 사본을 다른 저장소에 올려 `AI_LORAS` 주소를 바꾼다.
 4. 비교: `node --env-file=.env.local scripts/lora/review.mjs <그 폴더>` → 학습에 넣지 않은 쌍으로 '학습 전 기본 모델 / 학습 후 / 실제 작업물'을 나란히 놓은 `review/index.html`. 학습 전에 돌리면 기본 모델만 본다.
 
 FLUX.2 [dev]는 모델 라이선스상 fal 같은 허가된 서비스에서만 상업적으로 돌린다. 사진 쌍은 다른 모델(Qwen-Image-Edit 등)로 다시 학습할 때 그대로 쓴다.

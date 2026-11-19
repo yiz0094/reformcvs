@@ -44,10 +44,10 @@ export async function dataUri(path) {
   return `data:${type};base64,${(await readFile(path)).toString("base64")}`;
 }
 
-/** 생성 결과(주소 또는 data URI)를 바이트로 */
+/** 결과 파일(주소 또는 data URI)을 바이트로 */
 export async function bytes(url) {
   if (url.startsWith("data:")) return Buffer.from(url.slice(url.indexOf(",") + 1), "base64");
   const res = await fetch(url);
-  if (!res.ok) throw new Error(`결과 이미지를 받지 못했어요 ${res.status}`);
+  if (!res.ok) throw new Error(`파일을 받지 못했어요 ${res.status}`);
   return Buffer.from(await res.arrayBuffer());
 }
