@@ -41,7 +41,7 @@ npm run start
 
 **실제로 동작:** 사진 줄이기와 EXIF 제거, 밝기·흔들림·옷 크기 검사, 사진의 대표 색 계산, 디자인 적용 조건 판정, 오버레이 합성(위치·크기·색·이니셜), 원본 비교, 시안 이미지 저장(‘AI 예시’ 표시 포함), 가격 계산, 주문 상태 흐름, 고객 화면과 운영 콘솔 탭 사이 동기화, 운영 콘솔의 ‘엑셀로 내려받기’(보드의 주문을 엑셀용 CSV로).
 
-**흉내만 냄:** 옷 종류 인식, AI 정밀 시안(화면 합성 효과로 대신 보여 줌), 카카오 로그인, 토스 결제, 알림톡, 배송 조회. 화면에 `데모` 표시가 붙은 곳이 여기에 해당합니다.
+**흉내만 냄:** 옷 종류 인식, AI 정밀 시안(`FAL_KEY`가 없으면 화면 합성 효과로 대신 보여 줌, 아래 'AI 시안'), 토스 결제, 알림톡, 배송 조회. 화면에 `데모` 표시가 붙은 곳이 여기에 해당합니다.
 
 가격, 작업실 주소, 주문 번호, 콘솔 지표 숫자는 모두 예시입니다.
 
@@ -65,14 +65,14 @@ npm run start
 - 사진 보관함은 5MB 이하 jpg·png·webp만 받는다.
 - 손님이 카카오에서 연결을 끊거나 탈퇴하면 카카오가 `/api/kakao/unlink`를 부른다. 주문에 쓰이지 않은 기록·사진을 지우고, 주문이 없으면 계정째, 주문이 있으면 주문만 남기고 카카오 정보를 지운다(`forget_kakao_user`).
 
-아직 없는 것: 실제 결제, 알림톡, AI 인식·시안 생성.
+아직 없는 것: 실제 결제, 알림톡, AI 인식. AI 시안은 연결만 해 두었고 키를 넣어야 켜진다(아래 'AI 시안').
 
 손님 화면의 저장소(`src/lib/store.ts`)는 그대로 쓰고, 바뀐 내용을 `src/lib/db.ts`가 서버에 따라 적는다. 테이블과 접근 규칙은 `supabase/schema.sql`에 있다.
 
 ### 연결하는 법
 
 1. supabase.com에서 프로젝트를 만든다. 지역은 Northeast Asia (Seoul).
-2. SQL Editor에 `supabase/schema.sql`을 통째로 붙여 넣고 실행한다. 예전 schema.sql을 이미 실행한 프로젝트는 대신 `supabase/patch-*.sql` 중 아직 실행하지 않은 것을 순서대로(find-order → measure-cancel → manual → privacy → kakao-unlink → retention) 한 번씩 실행한다.
+2. SQL Editor에 `supabase/schema.sql`을 통째로 붙여 넣고 실행한다. 예전 schema.sql을 이미 실행한 프로젝트는 대신 `supabase/patch-*.sql` 중 아직 실행하지 않은 것을 순서대로(find-order → measure-cancel → manual → privacy → kakao-unlink → retention → ai-runs) 한 번씩 실행한다.
 3. Authentication → Sign In / Providers에서 **Allow anonymous sign-ins**를 켠다.
 4. Authentication → Users → Add user로 관리자 계정(이메일·비밀번호, Auto Confirm)을 만든다. 그다음 SQL Editor에서 관리자로 등록한다.
 
@@ -92,6 +92,26 @@ npm run start
 7. 카카오 로그인: 카카오 디벨로퍼스에 앱을 만들고 카카오 로그인을 켠다. REST API 키의 '카카오 로그인 리다이렉트 URI'에 `https://<프로젝트>.supabase.co/auth/v1/callback`을 넣는다. Supabase의 카카오 연결은 이메일을 항상 함께 요청하므로, 앱을 비즈 앱(개인 개발자 비즈 앱도 됨)으로 바꾸고 동의항목에서 닉네임은 필수, 이메일·프로필 사진은 선택 동의로 둔다. Supabase Sign In / Providers → Kakao에 REST API 키와 '카카오 로그인' 클라이언트 시크릿을 넣고 **Allow users without an email**을 켠다. URL Configuration의 Redirect URLs에 `http://localhost:3000/**`와 배포 주소 `/**`를 넣는다.
 8. 카카오 연결 해제 웹훅: 카카오 디벨로퍼스 앱 → 웹훅 → 연결 해제 웹훅에 POST `https://<배포 주소>/api/kakao/unlink`를 등록한다. 앱 → 어드민 키의 대표 어드민 키를 `KAKAO_ADMIN_KEY`로 `.env.local`과 Vercel 환경 변수에 넣는다. 이 값이 없으면 웹훅은 503으로 답한다.
 
+### AI 시안 (fal.ai)
+
+시안 화면의 'AI 시안 3장 만들기'는 화면이 만든 합성 시안(디자인을 고른 자리에 올린 사진)을 `/api/generate`로 보낸다. 서버는 fal.ai의 FLUX.2 편집 모델(`fal-ai/flux-2/lora/edit`)로 실제 작업처럼 다듬어 돌려주고, 화면이 'AI 예시' 표시를 넣는다. 결과는 fal 요청 기록에 남기지 않는다(`sync_mode`).
+
+- 켜는 법: `supabase/patch-ai-runs.sql`을 실행한 뒤 `FAL_KEY`를 `.env.local`과 Vercel 환경 변수에 넣는다. 키가 없거나 패치가 없으면 503으로 답하고 화면은 합성 예시를 보여 준다.
+- 비용 막기: 계정마다 하루 9장(3번), 전체 하루 300장(약 $13)까지. 숫자는 `src/app/api/generate/route.ts` 맨 위에 있다. fal 계정에도 사용 한도를 걸어 둔다.
+- 손님 사진이 미국(fal)으로 나가므로, 서비스에서 켜기 전에 처리방침에 처리 위탁·국외 이전으로 적는다.
+- 학습한 LoRA는 `AI_LORAS`에 JSON으로 넣는다. 키는 디자인 slug 또는 종류(`embroidery`·`wappen`·`patch`·`print`). 예: `{"wappen":{"url":"https://…safetensors","prompt":"Apply the RFM_WAPPEN reform: …"}}`
+
+#### LoRA 학습 (`scripts/lora`)
+
+대표님의 리폼 전·후 사진으로 fal의 FLUX.2 [dev] 편집 학습기(`fal-ai/flux-2-trainer-v2/edit`)에서 디자인 LoRA를 만든다. 기법(디자인 종류)마다 하나씩, 15~50쌍.
+
+1. 사진 폴더에 `01_전.jpg`, `01_후.jpg`, (있으면) `01_도안.png`처럼 번호를 맞춰 넣는다.
+2. 정리: `node scripts/lora/prepare.mjs <사진 폴더> --trigger RFM_WAPPEN --task "sew the wappen from the reference onto the garment"` → 옆에 `<사진 폴더>-RFM_WAPPEN/`(학습 쌍, 검사 쌍, `train.zip`). 키가 필요 없다. 검사: `node scripts/lora/prepare.check.mjs`
+3. 학습: `node --env-file=.env.local scripts/lora/train.mjs <그 폴더>` → 1,000스텝에 약 $12(도안을 넣으면 약 $19). 끝나면 `lora.json`과 `AI_LORAS`에 넣을 값을 보여 준다.
+4. 비교: `node --env-file=.env.local scripts/lora/review.mjs <그 폴더>` → 학습에 넣지 않은 쌍으로 '학습 전 기본 모델 / 학습 후 / 실제 작업물'을 나란히 놓은 `review/index.html`. 학습 전에 돌리면 기본 모델만 본다.
+
+FLUX.2 [dev]는 모델 라이선스상 fal 같은 허가된 서비스에서만 상업적으로 돌린다. 사진 쌍은 다른 모델(Qwen-Image-Edit 등)로 다시 학습할 때 그대로 쓴다.
+
 `npm run db:check`는 Supabase 없이 메모리 안 Postgres(PGlite)로 접근 규칙과 상태 함수를 검사한다.
 
 내려받은 엑셀에는 손님 이름·연락처·주소가 그대로 들어 있다. 결과보고처럼 밖에 낼 때는 그 칸을 지운다. 수식처럼 보이는 글자와 0으로 시작하는 번호를 글자로 남기는 처리는 `node src/lib/format.check.mjs`로 검사한다.
@@ -101,7 +121,7 @@ npm run start
 | 파일 | 지금 | 붙일 것 |
 | --- | --- | --- |
 | `src/screens/garment.tsx` | 인식 진행을 연출 | AI 인식 결과 표시 (4~5주차) |
-| `src/screens/mockup.tsx`의 `generate` | 화면 합성으로 후보 3장 | AI 시안 생성 (4~5주차) |
+| `src/screens/mockup.tsx`의 `generate` | `FAL_KEY`가 있으면 `/api/generate`로 AI 시안, 없으면 화면 합성 | 대표님 디자인으로 학습한 LoRA (`AI_LORAS`) |
 | `src/screens/checkout.tsx` | 결제 자리만 있음 | 결제 |
 | `src/lib/designs.ts` | 디자인 카드 6종을 코드에 둠 | 대표 작품으로 교체, 필요하면 테이블로 |
 

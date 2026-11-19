@@ -7,15 +7,15 @@ import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from
 import { BottomBar, Missing, PhoneFrame, ScreenSkeleton, TopBar } from "@/components/app-frame";
 import { MockupStage } from "@/components/mockup-stage";
 import { Badge, Button, Card, Chip, DemoTag, Label, Toast } from "@/components/ui";
-import { backendOn, requestManual as askDesigner } from "@/lib/db";
+import { aiMockup, backendOn, requestManual as askDesigner } from "@/lib/db";
 import { checkDesign, designBySlug, priceLines, sumLines } from "@/lib/designs";
 import { cx, newId, won, nowMs } from "@/lib/format";
 import { PLACEMENT_LABEL } from "@/lib/garments";
-import { downloadDataUrl, renderComposite, type Framing } from "@/lib/render";
+import { downloadDataUrl, renderComposite, stampWatermark, type Framing } from "@/lib/render";
 import { dispatch, useIsClient, useStore } from "@/lib/store";
 import type { MockupOptions } from "@/lib/types";
 
-type Candidate = { id: string; label: string; note: string; image: string; options: MockupOptions };
+type Candidate = { id: string; label: string; note: string; image: string; options: MockupOptions; ai?: boolean };
 type Gen = { phase: "idle" | "running" | "done"; step: number; items: Candidate[] };
 const IDLE: Gen = { phase: "idle", step: 0, items: [] };
 const GEN_STEPS = ["배치 영역 계산", "후보 3장 생성", "원본 복원 합성", "품질 검사"];
@@ -85,38 +85,49 @@ export default function MockupScreen() {
   const generate = async () => {
     stopGeneration();
     const my = run.current;
+    const started = nowMs();
     setGen({ phase: "running", step: 0, items: [] });
+    const at = (ms: number, fn: () => void) => timers.current.push(window.setTimeout(fn, ms));
+    at(600, () => setGen((g) => ({ ...g, step: 1 })));
+    at(2200, () => setGen((g) => ({ ...g, step: 2 })));
+    at(2900, () => setGen((g) => ({ ...g, step: 3 })));
     const alt = design.colors.find((c) => c.id !== o.colorId) ?? design.colors[0];
     const variants: { id: string; label: string; note: string; framing: Framing; options: MockupOptions }[] = [
       { id: "c1", label: "후보 1", note: "전체 모습", framing: "full", options: o },
       { id: "c2", label: "후보 2", note: "가까이 본 모습", framing: "close", options: o },
       { id: "c3", label: "후보 3", note: `${alt.label} 색 제안`, framing: "close", options: { ...o, colorId: alt.id } },
     ];
+    let notice = "";
     let items: Candidate[];
     try {
       items = await Promise.all(
-        variants.map(async (v) => ({
-          id: v.id,
-          label: v.label,
-          note: v.note,
-          options: v.options,
-          image: await renderComposite(garment, design, v.options, v.framing),
-        })),
+        variants.map(async (v) => {
+          const base = { id: v.id, label: v.label, note: v.note, options: v.options };
+          // 서버에 생성 AI가 켜져 있으면 합성 시안을 실제 작업처럼 다듬고, 아니면 합성 예시를 그대로 보여 준다
+          if (backendOn) {
+            try {
+              const ai = await aiMockup(design.slug, await renderComposite(garment, design, v.options, v.framing, false));
+              if (ai) return { ...base, image: await stampWatermark(ai), ai: true };
+            } catch (e) {
+              notice = e instanceof Error ? e.message : "AI 시안을 만들지 못했어요.";
+            }
+          }
+          return { ...base, image: await renderComposite(garment, design, v.options, v.framing) };
+        }),
       );
     } catch {
       if (run.current === my) {
+        stopGeneration();
         setGen(IDLE);
         setToast("시안을 만들지 못했어요. 다시 시도해 주세요.");
       }
       return;
     }
     if (run.current !== my) return;
-    const at = (ms: number, fn: () => void) => timers.current.push(window.setTimeout(fn, ms));
-    at(600, () => setGen((g) => ({ ...g, step: 1 })));
-    at(2200, () => setGen((g) => ({ ...g, step: 2 })));
-    at(2900, () => setGen((g) => ({ ...g, step: 3 })));
-    items.forEach((item, i) => at(3500 + i * 700, () => setGen((g) => ({ ...g, items: [...g.items, item] }))));
-    at(5100, () => setGen((g) => ({ ...g, phase: "done", step: 4 })));
+    if (notice) setToast(`${notice} 합성 예시로 보여 드려요.`);
+    const wait = Math.max(0, 3500 - (nowMs() - started));
+    items.forEach((item, i) => at(wait + i * 700, () => setGen((g) => ({ ...g, items: [...g.items, item] }))));
+    at(wait + 1600, () => setGen((g) => ({ ...g, phase: "done", step: 4 })));
   };
 
   const vote = (id: string, v: "up" | "down") => {
@@ -318,7 +329,7 @@ export default function MockupScreen() {
         ) : null}
         <Card>
           <div className="flex items-center gap-1.5 text-[16px] font-bold">
-            <Sparkles size={17} className="text-accent" /> AI 정밀 시안 <DemoTag />
+            <Sparkles size={17} className="text-accent" /> AI 정밀 시안 {gen.items.some((i) => i.ai) ? null : <DemoTag />}
           </div>
           <p className="mt-1 text-[13px] leading-relaxed text-muted">
             원단 질감과 조명을 맞춘 후보 3장을 만들어요. 디자인 바깥은 원본 사진 그대로 지켜요.
@@ -365,7 +376,9 @@ export default function MockupScreen() {
                       >
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img src={item.image} alt="" className="aspect-[3/4] w-full object-cover" />
-                        <span className="absolute left-1 top-1 rounded bg-white/90 px-1 py-px text-[10.5px] font-bold text-ok">검사 통과</span>
+                        {item.ai ? null : (
+                          <span className="absolute left-1 top-1 rounded bg-white/90 px-1 py-px text-[10.5px] font-bold text-ok">검사 통과</span>
+                        )}
                       </button>
                       <div className="mt-1.5 text-[12.5px] font-semibold">{item.label}</div>
                       <div className="truncate text-[11.5px] text-muted">{item.note}</div>
@@ -401,7 +414,9 @@ export default function MockupScreen() {
             </>
           )}
           <p className="mt-3 text-[11.5px] leading-relaxed text-[#9a9389]">
-            시안 단계라 화면 합성으로 예시를 보여 드려요. 서비스에서는 생성 AI가 만들고 자동 검사를 통과한 시안만 보여요.
+            {gen.items.some((i) => i.ai)
+              ? "생성 AI가 만든 예시예요. 실제 작업물과 다를 수 있고, 옷이 도착하면 확정 사진으로 다시 보여 드려요."
+              : "시안 단계라 화면 합성으로 예시를 보여 드려요. 서비스에서는 생성 AI가 만들고 자동 검사를 통과한 시안만 보여요."}
           </p>
         </Card>
         {designerMockup || session.manualRequested ? (

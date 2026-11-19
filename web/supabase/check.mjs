@@ -255,4 +255,13 @@ assert.deepEqual((await q("select id from public.garments where user_id = $1", [
 assert.deepEqual((await q("select phone from public.order_lookups where user_id = $1", [NEW])).map((r) => r.phone), ["011"], "30일 지난 주문 찾기 시도만 지운다");
 assert.equal((await q("select phone from public.manual_requests where session_id = 'sn1'"))[0].phone, null, "시안을 보낸 지 30일 지난 연락처는 지운다");
 
+// AI 시안 횟수: 계정별 하루 몫, 전체 하루 몫. 하루 지난 기록은 세지 않고 지운다
+const take = async (uid, user, total) => (await q("select public.take_ai_run($1, $2, $3) as v", [uid, user, total]))[0].v;
+await fails(A, "select public.take_ai_run($1, 9, 300)", [A], "손님은 횟수 함수를 직접 못 부른다");
+assert.equal((await rows(A, "select * from public.ai_runs")).length, 0, "손님은 횟수 기록을 못 본다");
+await q("insert into public.ai_runs (user_id, at) values ($1, now() - interval '2 days')", [A]);
+assert.deepEqual([await take(A, 2, 10), await take(A, 2, 10), await take(A, 2, 10)], ["ok", "ok", "user"], "계정별 하루 몫을 넘으면 막는다");
+assert.equal(await take(B, 2, 2), "total", "전체 하루 몫을 넘으면 막는다");
+assert.equal((await q("select count(*)::int as n from public.ai_runs"))[0].n, 2, "하루 지난 기록은 지우고 막힌 시도는 세지 않는다");
+
 console.log("schema.sql 규칙 검사 통과");

@@ -287,6 +287,20 @@ export async function placeOrder(input: {
   return body.order;
 }
 
+/** 합성 시안을 생성 AI로 실제 작업처럼 다듬는다(/api/generate). 서버에 AI가 꺼져 있으면 null */
+export async function aiMockup(designSlug: string, image: string): Promise<string | null> {
+  const { data } = await customerDb().auth.getSession();
+  const res = await fetch("/api/generate", {
+    method: "POST",
+    headers: { "content-type": "application/json", authorization: `Bearer ${data.session?.access_token ?? ""}` },
+    body: JSON.stringify({ designSlug, image }),
+  });
+  if (res.status === 503) return null;
+  const body = (await res.json().catch(() => ({}))) as { image?: string; error?: string };
+  if (!res.ok || !body.image) throw new Error(body.error ?? "AI 시안을 만들지 못했어요.");
+  return body.image;
+}
+
 async function flush() {
   for (const id of [...waiting.keys()]) sendSession(id);
   await queue;

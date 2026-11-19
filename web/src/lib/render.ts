@@ -69,6 +69,19 @@ export async function renderComposite(
   return canvas.toDataURL("image/jpeg", 0.9);
 }
 
+/** 생성 AI가 만든 이미지에도 'AI 예시' 표시를 넣는다 */
+export async function stampWatermark(dataUrl: string): Promise<string> {
+  const img = await loadImage(dataUrl);
+  const canvas = document.createElement("canvas");
+  canvas.width = img.naturalWidth;
+  canvas.height = img.naturalHeight;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("캔버스를 만들지 못했어요");
+  ctx.drawImage(img, 0, 0);
+  drawWatermark(canvas);
+  return canvas.toDataURL("image/jpeg", 0.9);
+}
+
 function drawWatermark(c: HTMLCanvasElement) {
   const ctx = c.getContext("2d");
   if (!ctx) return;
